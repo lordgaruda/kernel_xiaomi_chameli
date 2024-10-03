@@ -34,6 +34,8 @@
 #define EXT_SPK_AMP_W_NAME "Ext_Speaker_Amp"
 #define EXT_RCV_AMP_W_NAME "Ext_Reciver_Amp"
 
+int soc_aux_init_only_sia81xx(struct platform_device *pdev, struct snd_soc_card *card);
+
 static const char *const mt6833_spk_type_str[] = {MTK_SPK_NOT_SMARTPA_STR,
 						  MTK_SPK_RICHTEK_RT5509_STR,
 						  MTK_SPK_MEDIATEK_MT6660_STR,
@@ -1183,7 +1185,7 @@ static int mt6833_mt6359_dev_probe(struct platform_device *pdev)
 
 	card->dev = &pdev->dev;
 
-	ret = soc_aux_init_only_sia81xx(pdev, card);
+	//ret = soc_aux_init_only_sia81xx(pdev, card);
 
 	dev_info(&pdev->dev, "%s(), devm_snd_soc_register_card\n", __func__);
 

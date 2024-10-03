@@ -2080,6 +2080,9 @@ static size_t log_output(int facility, int level, enum log_flags lflags, const c
 #endif
 }
 
+extern void ram_console_write(struct console *console, const char *s,
+                                unsigned int count);
+
 /* Must be called under logbuf_lock. */
 int vprintk_store(int facility, int level,
 		  const char *dict, size_t dictlen,
@@ -2143,6 +2146,7 @@ int vprintk_store(int facility, int level,
 	else
 		this_cpu_write(printk_state, ' ');
 #endif
+	//ram_console_write(NULL,text,text_len);
 
 	return log_output(facility, level, lflags,
 			  dict, dictlen, text, text_len);

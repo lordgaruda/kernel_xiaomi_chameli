@@ -560,7 +560,8 @@ static int get_hw_backlight_therm_temp(void)
 #endif
 
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
-	ret = iio_read_channel_processed(thermistor_ch5, &val);
+	//ret = iio_read_channel_processed(thermistor_ch5, &val);
+	ret = -1;
 	if (ret < 0) {
 		backlight_therm_printk("Busy/Timeout, IIO ch read failed %d\n", ret);
 		return ret;

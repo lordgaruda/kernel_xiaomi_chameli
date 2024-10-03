@@ -965,11 +965,16 @@ static int mtk_spi_probe(struct platform_device *pdev)
 
 	if (mdata->dev_comp->need_pad_sel) {
 		if (mdata->pad_num != master->num_chipselect) {
-			dev_err(&pdev->dev,
-				"pad_num does not match num_chipselect(%d != %d)\n",
-				mdata->pad_num, master->num_chipselect);
-			ret = -EINVAL;
-			goto err_disable_runtime_pm;
+			if(mdata->pad_num == 2) {
+				// for fucking sake, can you detect the touch panel without making me insane
+				mdata->pad_num = 1;
+			} else {
+				dev_err(&pdev->dev,
+					"pad_num does not match num_chipselect(%d != %d)\n",
+					mdata->pad_num, master->num_chipselect);
+				ret = -EINVAL;
+				goto err_disable_runtime_pm;
+			}
 		}
 
 		if (!master->cs_gpios && master->num_chipselect > 1) {

@@ -25,7 +25,7 @@
 #define DEBUG_LOG (2)
 
 /* debug log setting */
-u8 g_debug_level = DEBUG_LOG;
+extern u8 g_debug_level;
 
 #define gf_debug(level, fmt, args...) do { \
 			if (g_debug_level >= level) {\
@@ -54,7 +54,6 @@ u8 g_debug_level = DEBUG_LOG;
 #define GF_KEY_INPUT_POWER		KEY_POWER
 #define GF_KEY_INPUT_CAMERA		KEY_CAMERA
 #define GF_KEY_INPUT_KPENTER            KEY_KPENTER
-#define GF_KEY_INPUT_DOUBLE		BTN_C
 
 typedef enum gf_nav_event {
 	GF_NAV_NONE = 0,
@@ -77,7 +76,6 @@ typedef enum gf_key_event {
 	GF_KEY_MENU,
 	GF_KEY_BACK,
 	GF_KEY_CAMERA,
-	GF_KEY_HOME_DOUBLE_CLICK,
 } gf_key_event_t;
 
 struct gf_key {
@@ -177,7 +175,6 @@ struct gf_device {
 	struct device *device;
 	struct class *class;
 	struct spi_device *spi;
-	struct platform_device *pldev;
 	int device_count;
 #ifndef CONFIG_SPI_MT65XX
 	struct mt_chip_conf spi_mcc;
@@ -219,13 +216,11 @@ struct gf_device {
 	u32 irq_num;
 	u8  need_update;
 	u32 irq;
-	u8 fb_black;
-	u8 wait_finger_down;
 
 #ifdef CONFIG_OF
 	struct pinctrl *pinctrl_gpios;
 	struct pinctrl_state *pins_irq;
-	struct pinctrl_state *pins_miso_spi, *pins_miso_pullhigh, *pins_miso_pulllow;
+	struct pinctrl_state *pins_miso_spi, *pins_miso_pullhigh, *pins_miso_pulllow, *pins_spi_cs_high, *pins_spi_cs_low, *pins_spi_mode;
 	struct pinctrl_state *pins_reset_high, *pins_reset_low;
 #endif
 };
@@ -233,7 +228,7 @@ struct gf_device {
 /**************************REE SPI******************************/
 
 #ifndef SUPPORT_REE_SPI
-#define SUPPORT_REE_SPI	
+#define SUPPORT_REE_SPI
 //#define SUPPORT_REE_OSWEGO
 #endif
 
@@ -247,6 +242,8 @@ struct gf_device {
 #define ERR_PREPARE_FAIL 113
 
 /**********************function defination**********************/
+extern bool goodix_fp_exist;
+extern bool fpc1022_fp_exist;
 #ifndef CONFIG_SPI_MT65XX
 void gf_spi_setup_conf_ree(struct gf_device *gf_dev, u32 speed, enum spi_transfer_mode mode);
 #endif
@@ -254,7 +251,7 @@ int gf_spi_read_bytes_ree(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *
 int gf_spi_write_bytes_ree(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *tx_buf);
 int gf_spi_read_byte_ree(struct gf_device *gf_dev, u16 addr, u8 *value);
 int gf_spi_write_byte_ree(struct gf_device *gf_dev, u16 addr, u8 value);
-int gf_ioctl_transfer_raw_cmd(struct gf_device *gf_dev, unsigned long arg,unsigned int bufsiz);
+int gf_ioctl_transfer_raw_cmd(struct gf_device *gf_dev, unsigned long arg, unsigned int bufsiz);
 #ifndef CONFIG_SPI_MT65XX
 int  gf_ioctl_spi_init_cfg_cmd(struct mt_chip_conf *mcc, unsigned long arg);
 #endif

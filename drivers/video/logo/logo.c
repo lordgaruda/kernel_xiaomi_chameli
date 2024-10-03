@@ -27,10 +27,12 @@ MODULE_PARM_DESC(nologo, "Disables startup logo");
  */
 
 static bool logos_freed;
-
+char fb_hazItStarted = 0;
+	
 static int __init fb_logo_late_init(void)
 {
 	logos_freed = true;
+	fb_hazItStarted = 1;
 	return 0;
 }
 

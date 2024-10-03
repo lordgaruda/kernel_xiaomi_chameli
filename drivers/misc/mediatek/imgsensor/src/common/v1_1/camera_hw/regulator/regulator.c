@@ -17,7 +17,6 @@
 static const int regulator_voltage[] = {
 	REGULATOR_VOLTAGE_0,
 	REGULATOR_VOLTAGE_1000,
-	REGULATOR_VOLTAGE_1050,
 	REGULATOR_VOLTAGE_1100,
 	REGULATOR_VOLTAGE_1200,
 	REGULATOR_VOLTAGE_1210,
@@ -25,16 +24,12 @@ static const int regulator_voltage[] = {
 	REGULATOR_VOLTAGE_1500,
 	REGULATOR_VOLTAGE_1800,
 	REGULATOR_VOLTAGE_2500,
-	REGULATOR_VOLTAGE_2700,
 	REGULATOR_VOLTAGE_2800,
 	REGULATOR_VOLTAGE_2900,
 };
 
 struct REGULATOR_CTRL regulator_control[REGULATOR_TYPE_MAX_NUM] = {
 	{"vcama"},
-#ifdef CONFIG_REGULATOR_RT5133
-	{"vcama1"},
-#endif
 	{"vcamd"},
 	{"vcamio"},
 };
@@ -179,7 +174,6 @@ static enum IMGSENSOR_RETURN regulator_dump(void *pinstance)
 {
 	struct REGULATOR *preg = (struct REGULATOR *)pinstance;
 	int i, j;
-	int enable = 0;
 
 	for (j = IMGSENSOR_SENSOR_IDX_MIN_NUM;
 		j < IMGSENSOR_SENSOR_IDX_MAX_NUM;
@@ -190,18 +184,13 @@ static enum IMGSENSOR_RETURN regulator_dump(void *pinstance)
 		i++) {
 			if (!preg->pregulator[j][i])
 				continue;
-
 			if (regulator_is_enabled(preg->pregulator[j][i]) &&
 				atomic_read(&preg->enable_cnt[j][i]) != 0)
-				enable = 1;
-			else
-				enable = 0;
-
-			PK_DBG("[sensor_dump][regulator] index= %d, %s = %d, enable = %d\n",
-				j,
-				regulator_control[i].pregulator_type,
-				regulator_get_voltage(preg->pregulator[j][i]),
-				enable);
+				PK_DBG("index= %d %s = %d\n",
+					j,
+					regulator_control[i].pregulator_type,
+					regulator_get_voltage(
+						preg->pregulator[j][i]));
 		}
 	}
 	return IMGSENSOR_RETURN_SUCCESS;

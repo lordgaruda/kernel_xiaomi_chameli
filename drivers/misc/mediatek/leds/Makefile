@@ -9,7 +9,12 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-#
+
+#BSP.LCM - 2020.11.14 - modify to set brightness
+obj-$(CONFIG_KTD3136_SUPPORT) += ktd3136_bl.o
+obj-$(CONFIG_LM3697_SUPPORT) += ti-lmu-backlight-core.o
+obj-$(CONFIG_LM3697_SUPPORT) += ti-lmu-backlight-data.o
+
 ifdef CONFIG_LEDS_MTK_DISP
 obj-$(CONFIG_LEDS_MTK_DISP)		+= leds-mtk-disp.o
 else ifdef CONFIG_LEDS_MTK_PWM

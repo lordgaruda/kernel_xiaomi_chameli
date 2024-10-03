@@ -12842,7 +12842,7 @@ static void ISP_BH_Switch_Workqueue(struct work_struct *pWork)
 	}
 
 	/* set CAM MUX & CAMSV */
-	Switch_Tg_For_Stagger(irq_module);
+	//Switch_Tg_For_Stagger(irq_module);
 	ISP_CAMSV_Config(irq_module);
 
 	/* 7. enable TG CMOS & viewFinder */

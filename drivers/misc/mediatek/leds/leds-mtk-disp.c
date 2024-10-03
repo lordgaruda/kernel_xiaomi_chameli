@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2018 MediaTek Inc.
+ * Copyright (C) 2021 XiaoMi, Inc.
  *
  */
 
@@ -18,10 +19,20 @@
 
 #include "leds-mtk-disp.h"
 
+/* BSP.LCM - 2020.11.25 - modify to set brightness */
+#ifdef CONFIG_LM3697_SUPPORT
+#include <linux/mfd/ti-lmu-backlight.h>
+#endif
+/* end modify */
+
+/* BSP.LCM - 2020.11.25 - modify to set brightness */
+#ifdef CONFIG_KTD3136_SUPPORT
+#include <linux/mfd/ktd3136.h>
+#endif
+/* end modify */
 
 #ifdef CONFIG_DRM_MEDIATEK
 extern int mtkfb_set_backlight_level(unsigned int level);
-extern int lcm_get_cur_level(void);
 #endif
 
 #ifdef MET_USER_EVENT_SUPPORT
@@ -163,9 +174,16 @@ static int getLedDespIndex(char *name)
 /****************************************************************************
  * driver functions
  ***************************************************************************/
+extern char *saved_command_line;
 static int led_level_disp_set(struct mtk_led_data *s_led,
 	int brightness)
 {
+/* BSP.LCM - 2020.11.25 - modify to set brightness */
+#if defined(CONFIG_KTD3136_SUPPORT) || defined(CONFIG_LM3697_SUPPORT)
+	int bkl_id = 0;
+	char *bkl_ptr = (char *)strnstr(saved_command_line, ":bklic=", strlen(saved_command_line));
+#endif
+/* end modify */
 
 	brightness = min(brightness, s_led->conf.max_level);
 	if (brightness == s_led->conf.level)
@@ -179,6 +197,22 @@ static int led_level_disp_set(struct mtk_led_data *s_led,
 	mtkfb_set_backlight_level(brightness);
 	s_led->conf.level = brightness;
 #endif
+
+/* BSP.LCM - 2020.11.25 - modify to set brightness */
+#if defined(CONFIG_KTD3136_SUPPORT) || defined(CONFIG_LM3697_SUPPORT)
+	bkl_ptr += strlen(":bklic=");
+	bkl_id = simple_strtol(bkl_ptr, NULL, 10);
+	if (bkl_id == 24) {
+		ktd3137_brightness_set(brightness);
+		s_led->conf.level = brightness;
+		printk("[%s]: backlight is ktd3136 contrl! brightness=%d\n", __func__, brightness);
+	} else if (bkl_id == 1) {
+		lm3697_set_brightness(brightness);
+		s_led->conf.level = brightness;
+		printk("[%s]: backlight is lm3697 contrl! brightness=%d\n", __func__, brightness);
+	}
+#endif
+/* end modify */
 	return 0;
 
 }
@@ -191,9 +225,8 @@ static int led_level_disp_set(struct mtk_led_data *s_led,
 int setMaxBrightness(char *name, int percent, bool enable)
 {
 	struct mtk_led_data *led_dat;
-		int max_l = 0, index = -1, limit_l = 0, cur_l = 0, last_level;
+		int max_l = 0, index = -1, limit_l = 0, cur_l = 0;
 
-	last_level = lcm_get_cur_level();
 	index = getLedDespIndex(name);
 	if (index < 0) {
 		pr_notice("can not find leds by led_desp %s", name);
@@ -208,10 +241,10 @@ int setMaxBrightness(char *name, int percent, bool enable)
 		leds_info->leds[index]->name, percent, limit_l, enable);
 	if (enable) {
 		led_dat->conf.max_level = limit_l;
-		cur_l = min(last_level, limit_l);
+		cur_l = min(led_dat->last_level, limit_l);
 	} else if (!enable) {
 		led_dat->conf.max_level = max_l;
-		cur_l = last_level;
+		cur_l = led_dat->last_level;
 	}
 #ifdef CONFIG_LEDS_BRIGHTNESS_CHANGED
 	call_notifier(3, led_dat);
@@ -239,10 +272,13 @@ int mt_leds_brightness_set(char *name, int level)
 	}
 	led_dat = container_of(leds_info->leds[index],
 		struct mtk_led_data, desp);
+
 	led_Level = (
 		(((1 << led_dat->conf.led_bits) - 1) * level
 		+ (((1 << led_dat->conf.trans_bits) - 1) / 2))
 		/ ((1 << led_dat->conf.trans_bits) - 1));
+	printk("mtk_debug %s led_level = %d\n", __func__, led_Level);
+
 	led_level_disp_set(led_dat, led_Level);
 	led_dat->last_level = led_Level;
 
@@ -269,6 +305,7 @@ static int led_level_set(struct led_classdev *led_cdev,
 		/ ((1 << led_dat->conf.led_bits) - 1));
 
 	led_debug_log(led_dat, brightness, trans_level);
+	printk("mtk_debug %s trans_level = %d\n", __func__, trans_level);
 
 #ifdef MET_USER_EVENT_SUPPORT
 	if (enable_met_backlight_tag())
@@ -321,7 +358,7 @@ static int mtk_leds_parse_dt(struct device *dev,
 {
 	struct device_node *leds_np, *child;
 	struct mtk_led_data *s_led;
-	int ret = 0, num = 0, level = 0;
+	int ret = 0, num = 0, level = 102;
 	const char *state;
 
 	leds_np = of_find_node_by_name(dev->of_node, "backlight");
@@ -370,9 +407,7 @@ static int mtk_leds_parse_dt(struct device *dev,
 				level = s_led->conf.cdev.max_brightness;
 			else
 				level = 0;
-		} else {
-			level = s_led->conf.cdev.max_brightness;
-		}
+		};
 		pr_info("parse %d leds dt: %s, %d, %d",
 			num, s_led->conf.cdev.name,
 			s_led->conf.max_level,

@@ -68,7 +68,6 @@
 #include "mtk_intf.h"
 
 extern bool get_charging_call_state(void);
-extern int pdpm_is_charge_pump_enable(void);
 extern bool is_kernel_power_off_charging(void);
 
 static int _uA_to_mA(int uA)
@@ -171,15 +170,10 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	}
 
 	if (info->usb_unlimited) {
-		if (pdata->input_current_limit_by_aicl != -1) {
-			pdata->input_current_limit =
-				pdata->input_current_limit_by_aicl;
-		} else {
-			pdata->input_current_limit =
-				info->data.usb_unlimited_current;
-		}
+		pdata->input_current_limit = 2000000;
+
 		pdata->charging_current_limit =
-			info->data.ac_charger_current;
+					info->data.ac_charger_current;
 		goto done;
 	}
 
@@ -331,6 +325,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			pdata->input_current_limit =
 					pdata->input_current_limit_by_aicl;
 	}
+
 done:
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
@@ -344,7 +339,7 @@ done:
 
 	chr_err("force:%d cp_enable:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d sc:%d,%d,%d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d thermal_mitigation_current:%d\n",
 		_uA_to_mA(pdata->force_charging_current),
-		pdpm_is_charge_pump_enable(),
+		0,
 		_uA_to_mA(pdata->thermal_input_current_limit),
 		_uA_to_mA(pdata->thermal_charging_current_limit),
 		_uA_to_mA(info->pe4.pe4_input_current_limit),
@@ -366,9 +361,6 @@ done:
 		charging_current_limit = min(1000000,charging_current_limit);
 		chr_err("is charging call state:%d\n",_uA_to_mA(charging_current_limit));
 	}
-
-	if (pdpm_is_charge_pump_enable())
-		 charging_current_limit =  100000;
 
 	charger_dev_set_input_current(info->chg1_dev,pdata->input_current_limit);
 	charger_dev_set_charging_current(info->chg1_dev,
@@ -751,15 +743,13 @@ static int select_pdc_charging_current_limit(struct charger_manager *info)
 		pdata->charging_current_limit = min(1000000,pdata->charging_current_limit);
 		chr_err("is charging call state:%d\n",_uA_to_mA(pdata->charging_current_limit));
 	}
-	if(pdpm_is_charge_pump_enable())
-		pdata->charging_current_limit = 100000;
 	charger_dev_set_input_current(info->chg1_dev,pdata->input_current_limit);
 	charger_dev_set_charging_current(info->chg1_dev,
 					pdata->charging_current_limit);
 
 	chr_err("force:%d cp_enable %d, thermal:%d,%d setting:%d %d sc:%d %d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d\n",
 		_uA_to_mA(pdata->force_charging_current),
-		pdpm_is_charge_pump_enable(),
+		0,
 		_uA_to_mA(pdata->thermal_input_current_limit),
 		_uA_to_mA(pdata->thermal_charging_current_limit),
 		_uA_to_mA(pdata->input_current_limit),
@@ -881,17 +871,6 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 			chr_err("enter PE5.0\n");
 			swchgalg->state = CHR_PE50;
 			info->pe5.online = true;
-			if (mtk_pe20_get_is_enable(info)) {
-				mtk_pe20_set_is_enable(info, false);
-				if (mtk_pe20_get_is_connect(info))
-					mtk_pe20_reset_ta_vchr(info);
-			}
-
-			if (mtk_pe_get_is_enable(info)) {
-				mtk_pe_set_is_enable(info, false);
-				if (mtk_pe_get_is_connect(info))
-					mtk_pe_reset_ta_vchr(info);
-			}
 			return 1;
 		}
 	}
@@ -904,17 +883,6 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 			info->chg1_data.thermal_input_current_limit == -1) {
 			chr_err("enter PE4.0!\n");
 			swchgalg->state = CHR_PE40;
-			if (mtk_pe20_get_is_enable(info)) {
-				mtk_pe20_set_is_enable(info, false);
-				if (mtk_pe20_get_is_connect(info))
-					mtk_pe20_reset_ta_vchr(info);
-			}
-
-			if (mtk_pe_get_is_enable(info)) {
-				mtk_pe_set_is_enable(info, false);
-				if (mtk_pe_get_is_connect(info))
-					mtk_pe_reset_ta_vchr(info);
-			}
 			return 1;
 		}
 	}
@@ -924,17 +892,6 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 		if (info->enable_hv_charging == true) {
 			chr_err("enter PDC!\n");
 			swchgalg->state = CHR_PDC;
-			if (mtk_pe20_get_is_enable(info)) {
-				mtk_pe20_set_is_enable(info, false);
-				if (mtk_pe20_get_is_connect(info))
-					mtk_pe20_reset_ta_vchr(info);
-			}
-
-			if (mtk_pe_get_is_enable(info)) {
-				mtk_pe_set_is_enable(info, false);
-				if (mtk_pe_get_is_connect(info))
-					mtk_pe_reset_ta_vchr(info);
-			}
 			return 1;
 		}
 	}
